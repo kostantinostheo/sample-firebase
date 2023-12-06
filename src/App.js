@@ -17,9 +17,9 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login app={app} />} />
+          <Route path="/" element={<Login db={db} />} />
           <Route path="register" element={<Register db={db}/>} />
-          <Route path="courses" element={<Courses app={app}/>} />
+          <Route path="courses" element={<Courses db={db}/>} />
         </Routes>
       </BrowserRouter>
     </div>
