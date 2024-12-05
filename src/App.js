@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Register from './component/Register';
 import Login from './component/Login';
-import Courses from './component/Courses';
+import Profile from './component/Profile';
 
 
 
@@ -14,7 +14,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="courses" element={<Courses/>} />
+          <Route path="profile" element={<Profile/>} />
           <Route path="/" element={<Login />} />
           <Route path="register" element={<Register/>} />
         </Routes>

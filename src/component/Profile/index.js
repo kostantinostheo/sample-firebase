@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 
-export default function Courses() {
+export default function Profile() {
     const [email, setEmail] = useState(null);
     const [userId, setUserId] = useState(null); // Store the user ID
     const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function Courses() {
 
     useEffect(() => {
         if (userId) {
-            fetchUserData(); // Fetch user data only after the user ID is available
+            fetchUserData(); // Fetch user data only after the user_id is available
         }
     }, [userId]);
 
@@ -52,15 +52,17 @@ export default function Courses() {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setFormMessage('');
-
+        
         try {
-            await addDoc(collection(FIREBASE_DB, 'user'), {
+            const payload = {
                 amka: amka,
                 firstName: firstName,
                 age: parseInt(age),
                 userId: userId, // Add the user's UID
                 createdAt: new Date(),
-            });
+            }
+            
+            await addDoc(collection(FIREBASE_DB, 'user'), payload);
 
             setFormMessage('Data submitted successfully!');
             setAmka('');

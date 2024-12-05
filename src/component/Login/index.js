@@ -10,8 +10,6 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const auth = FIREBASE_AUTH;
-
     const navigate = useNavigate();
 
     // Handles the login functionality of the user
@@ -21,9 +19,9 @@ export default function Login() {
         setError(''); // Clear previous error
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
             console.log("User logged in:", userCredential.user);
-            navigate('/courses'); // Navigate to the courses page after successful login
+            navigate('/profile'); // Navigate to the courses page after successful login
         } catch (error) {
             setError(error.message); // Display the error message
         } finally {
@@ -32,14 +30,14 @@ export default function Login() {
     }
   
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
             if (currentUser) {
-                navigate('/courses'); // Navigate to /courses if already logged in
+                navigate('/profile'); // Navigate to /courses if already logged in
             }
         });
 
         return () => unsubscribe(); // Cleanup subscription
-    }, [navigate, auth]);
+    }, [navigate, FIREBASE_AUTH]);
 
 
     return (

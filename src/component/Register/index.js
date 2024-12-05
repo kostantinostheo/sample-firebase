@@ -8,14 +8,13 @@ export default function Register(){
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');  
   const [loading, setLoading] = useState(false);
-
-  const auth = FIREBASE_AUTH;
   
   async function SignUp(event) {
     event.preventDefault(); // Prevent default form submission
+    
     setLoading(true);
     try {
-      const res = await createUserWithEmailAndPassword(auth, email, password);
+      const res = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
       console.log("User registered:", res.user);
       window.location.href = "/";
     } catch (error) {
@@ -48,7 +47,7 @@ export default function Register(){
                     onChange={(e) => setPassword(e.target.value)}
                 />
             </div>
-            <button type='submit'>{loading ? 'Creating user' : 'Register'}</button>
+            <button type='submit'> {loading ? 'Creating user' : 'Register'}</button>
             <a href='/'>Already have an Account?</a>
         </form>
       </div>
