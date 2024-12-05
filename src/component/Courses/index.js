@@ -1,122 +1,156 @@
-import './index.css'
+import './index.css';
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'
-import './index.css'
-import { logout } from '../../Utils/Methods';
+import { FIREBASE_AUTH , FIREBASE_DB} from '../../config/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
-export default function Courses({db}){
 
-    const [courses, setCourses] = useState();
-    const [searchCourse, setSearchCourse] = useState();
-    const [addCourse, setAddCourse] = useState();
 
-    // Get all courses from the db
-    async function getAllCoursesFunc (e){
-        e.preventDefault()
-        
-        //"Bring me, from the collection 'courses' the document with name/value 'all_courses'"
-        const ref = doc(db, "courses", "all_courses"); 
-        const res = await getDoc(ref);
+export default function Courses() {
+    const [email, setEmail] = useState(null);
+    const [userId, setUserId] = useState(null); // Store the user ID
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-        if (res.exists()) {
-            // This part just make your response look more like a JSON and less like a text
-            var ugly = JSON.stringify(res.data());
-            var obj = JSON.parse(ugly);
-            var pretty = JSON.stringify(obj, undefined, 4);
-            // Save response to a string state
-            setCourses(pretty)
-        } else {
-            console.log("No such document!");
+    const [amka, setAmka] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [age, setAge] = useState('');
+    const [formMessage, setFormMessage] = useState('');
+    const [userData, setUserData] = useState([]); // State for fetched user data
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+            if (user) {
+                setEmail(user.email);
+                setUserId(user.uid); // Store the user's UID
+            } else {
+                setEmail(null);
+                setUserId(null);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (userId) {
+            fetchUserData(); // Fetch user data only after the user ID is available
         }
-    }
+    }, [userId]);
 
-    // Search course in the db
-    async function searchCourseFunc(e) {
-        e.preventDefault()
-
-        //"Bring me, from the collection 'courses' the document with name/value 'all_courses'"
-        const ref = doc(db, "courses", "all_courses");
-        const res = await getDoc(ref);
-
-        if (res.exists()) {
-            // From the all the courses (res.data()) filter these courses that course.name includes searchCourse
-            const filtered = Object.values(res.data()).filter(course => course.name.includes(searchCourse));
-
-            var ugly = JSON.stringify(filtered);
-            var obj = JSON.parse(ugly);
-            var pretty = JSON.stringify(obj, undefined, 4);
-            // Save to string state
-            setCourses(pretty)
-        } else {
-            setCourses("No such document!")
-            console.log("No such document!");
+    const handleLogout = async () => {
+        try {
+            await signOut(FIREBASE_AUTH);
+            navigate('/');
+        } catch (error) {
+            console.error('Error logging out:', error);
         }
-    }
+    };
 
-    // Update user data
-    async function pushCourseFunc(e) {
-        e.preventDefault()
-        const course = {
-            name: addCourse,
-            grade: 0
-        };
-        try{
-            // Get the users email from the local storage.
-            const user_mail = localStorage.getItem('email')
-            // For this user get all the data from the db
-            const ref = doc(db, "users", user_mail)
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        setFormMessage('');
 
-            // The user's object has a 'courses' array. Update and push the new data in the array with arrayUnion function
-            const res = await updateDoc(ref, {
-                courses: arrayUnion(course)
+        try {
+            await addDoc(collection(FIREBASE_DB, 'user'), {
+                amka: amka,
+                firstName: firstName,
+                age: parseInt(age),
+                userId: userId, // Add the user's UID
+                createdAt: new Date(),
             });
 
-            console.log(res.status)
-        }catch(e){
-          console.log(e)
+            setFormMessage('Data submitted successfully!');
+            setAmka('');
+            setFirstName('');
+            setAge('');
+            fetchUserData(); // Refresh user data after submission
+        } catch (error) {
+            console.error('Error adding document:', error);
+            setFormMessage('Error submitting data. Please try again.');
         }
+    };
+
+    const fetchUserData = async () => {
+        try {
+            const q = query(collection(FIREBASE_DB, 'user'), where('userId', '==', userId)); // Query only data matching the user's UID
+            const querySnapshot = await getDocs(q);
+            const users = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setUserData(users);
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    };
+
+    if (loading) {
+        return <div>Loading...</div>;
     }
 
-    // The useEffect runs after every render and replaces
-    useEffect(()=> {
-        // Every time you try to enter this page check if you have a saved key at the local storage. 
-        // If not, then do not allow user to enter this page and redirect to login page
-        if (localStorage.getItem('role') === null) {
-            window.location.href = '/'
-        }
-    },[])
-
-    return(
+    return (
         <div className='courses'>
-            <button onClick={logout} className='logout'>Logout</button>
-            <h5 className='welcome'>Welcome {localStorage.getItem('email')}</h5>
-            <div className='courses-container'>
-                <h1 className='weird'>This is not a 90s website</h1>
-                <h2>Search Courses</h2>
-                <div className='course-row'>
-                    <label>Course Name:</label>
-                    &nbsp;&nbsp;&nbsp;
+            <h1>Welcome</h1>
+            {email ? <p>Your email: {email}</p> : <p>No user logged in</p>}
+            <button onClick={handleLogout}>Logout</button>
+            <h2>Submit User Data</h2>
+            <form onSubmit={handleFormSubmit} className="data-form">
+                <div className="form-row">
+                    <label>AMKA:</label>
                     <input
-                        type="text"
-                        value={searchCourse}
-                        onChange={(e) => setSearchCourse(e.target.value)}
+                        type="number"
+                        value={amka}
+                        onChange={(e) => setAmka(e.target.value)}
+                        required
                     />
-                    <button onClick={searchCourseFunc}>Search</button>
                 </div>
-                <button style={{'marginTop': '30px'}} onClick={getAllCoursesFunc}>Get All Courses</button>
-            </div>
-            <textarea rows={5} cols={50} style={{'margin': '10px'}} value={courses}/ >
-                <form className='add-course'>
-                    <h2>Push Course for user </h2>
-                    <label>Course Name:</label>
-                    &nbsp;&nbsp;&nbsp;
+                <div className="form-row">
+                    <label>First Name:</label>
                     <input
                         type="text"
-                        value={addCourse}
-                        onChange={(e) => setAddCourse(e.target.value)}
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
                     />
-                    <button onClick={pushCourseFunc}> Add Course </button>
-                </form>
+                </div>
+                <div className="form-row">
+                    <label>Age:</label>
+                    <input
+                        type="number"
+                        value={age}
+                        onChange={(e) => setAge(e.target.value)}
+                        required
+                    />
+                </div>
+                <button type="submit">Submit</button>
+                {formMessage && <p>{formMessage}</p>}
+            </form>
+            <h2>User Data</h2>
+            {userData.length > 0 ? (
+                <table>
+                    <thead>
+                        <tr>
+                            <th>AMKA</th>
+                            <th>First Name</th>
+                            <th>Age</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {userData.map((user) => (
+                            <tr key={user.id}>
+                                <td>{user.amka}</td>
+                                <td>{user.firstName}</td>
+                                <td>{user.age}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : (
+                <p>No user data found</p>
+            )}
         </div>
-    )
+    );
 }
